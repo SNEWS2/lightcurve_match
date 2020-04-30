@@ -21,7 +21,7 @@ for i in {1..100}; do
     ../simulation/detectorrate 3500 1548000 $DELAY1_S 0.1 3 &> /dev/null
     ../simulation/detectorrate 560 0 $DELAY2_S 0.1 3 &> /dev/null
     echo getdelay \#$i
-    { time ./getdelay fluxparametrisation_3500kT_1.548e+06Hz_${DELAY1_MS}msT0_0.1msbin.txt fluxparametrisation_560kT_0Hz_${DELAY2_MS}msT0_0.1msbin.txt chi2 50 50 -300 300 -30 30 0.1 ; } &> getdelay.txt
+    { time ./getdelay fluxparametrisation_3500kT_1.548e+06Hz_${DELAY1_MS}msT0_0.1msbin.txt fluxparametrisation_560kT_0Hz_${DELAY2_MS}msT0_0.1msbin.txt chi2 50 50 -300 300 -30 30 0.1 ; } >> getdelay.txt 2>&1
     tail -n5 getdelay.txt | head -n1
     tail -n3 getdelay.txt | head -n1
 done
