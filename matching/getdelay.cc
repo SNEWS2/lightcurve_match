@@ -47,14 +47,14 @@ int main(int argc, char *argv[]) {
 
 	TH1D *hdet1 = new TH1D("h1", "", 100000, -2000, 8000);
 	TH1D *hdet2 = new TH1D("h2", "", 100000, -2000, 8000);
-	ifstream ifs(f1);
+	ifstream ifs(f1.c_str());
 	double _t, _val;
 	int bin = 0;
 	while (ifs >> _t >> _val) {
 	    bin++;
 	    hdet1->SetBinContent(bin,_val);
 	}
-	ifstream ifs2(f2);
+	ifstream ifs2(f2.c_str());
 	bin = 0;
 	while (ifs2 >> _t >> _val) {
 	    bin++;
