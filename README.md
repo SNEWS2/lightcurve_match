@@ -12,5 +12,5 @@ Authors: A. Coleiro, D. Dornic, M. Colomer Molla, M. Lincetto, V. Kulikovskiy
 ```
     for i in `ls log*`; do echo $i; cat $i | grep "^Mean"; done
 ```
-- `skymap` skympa creation code and error box area calculation (`README.md` there for more details) 
+- `skymap` HEALPix skymap creation code and error box area calculation (`README.md` there for more details) 
     - for the code ready-to use matching code that takes two txt files with histograms see `getdelay.cc`
