@@ -84,15 +84,17 @@ sigmatJUNOKM3 = 0.0074
 sigmatSKJUNO = 0.00275
 
 #define the resolution of the pixel of the healpix map
-NSIDE = 256
-#NSIDE = 64
+#NSIDE = 256
+NSIDE = 128
 NPIX = hp.nside2npix(NSIDE)
 print("pixels:",NPIX)
 
 chi2_stat = np.zeros(NPIX)
 
 ntoy=10000
-findpos = np.zeros(3)
+
+coord = np.array([hp.pix2ang(nside=NSIDE, ipix=pixel) for pixel in range(0, NPIX)])  #dec, ra
+coord[:,0]=coord[:,0]-np.pi/2.
 
 for itoy in range(0,ntoy):
     print("toy:",itoy)
@@ -106,36 +108,27 @@ for itoy in range(0,ntoy):
     #compute chi2 for each pixel, scanning all the sky
     chi2_list_min = 1e20
     bestpixel=-1
-    for pixel in range(0,NPIX):
 
-            dec, ra = hp.pix2ang(nside=NSIDE, ipix=pixel)
-            ra_test = ra*(180./np.pi)
-            dec_test = (dec-np.pi/2.)*(180./np.pi)
+    findposX = np.cos(coord[:,1])*np.cos(coord[:,0])
+    findposY = np.sin(coord[:,1])*np.cos(coord[:,0])
+    findposZ = np.sin(coord[:,0])
 
-            findpos[0] = np.cos(ra_test*(np.pi/180))*np.cos(dec_test*(np.pi/180))
-            findpos[1] = np.sin(ra_test*(np.pi/180))*np.cos(dec_test*(np.pi/180))
-            findpos[2] = np.sin(dec_test*(np.pi/180))
+    tdelay_obsICKM3 = (posdiffICKM3[0]*findposX+posdiffICKM3[1]*findposY+posdiffICKM3[2]*findposZ)/c
+    tdelay_obsHKKM3 = (posdiffHKKM3[0]*findposX+posdiffHKKM3[1]*findposY+posdiffHKKM3[2]*findposZ)/c
+    tdelay_obsICHK = (posdiffICHK[0]*findposX+posdiffICHK[1]*findposY+posdiffICHK[2]*findposZ)/c
+    tdelay_obsJUNOIC = (posdiffJUNOIC[0]*findposX+posdiffJUNOIC[1]*findposY+posdiffJUNOIC[2]*findposZ)/c
+    tdelay_obsJUNOHK = (posdiffJUNOHK[0]*findposX+posdiffJUNOHK[1]*findposY+posdiffJUNOHK[2]*findposZ)/c
+    tdelay_obsJUNOKM3 = (posdiffJUNOKM3[0]*findposX+posdiffJUNOKM3[1]*findposY+posdiffJUNOKM3[2]*findposZ)/c
 
-            tdelay_obsICKM3 = np.dot( posdiffICKM3, findpos )/c
-            tdelay_obsHKKM3 = np.dot( posdiffHKKM3, findpos )/c
-            tdelay_obsICHK = np.dot( posdiffICHK, findpos )/c
-            tdelay_obsJUNOIC = np.dot( posdiffJUNOIC, findpos )/c
-            tdelay_obsJUNOHK = np.dot( posdiffJUNOHK, findpos )/c
-            tdelay_obsJUNOKM3 = np.dot( posdiffJUNOKM3, findpos )/c
+    chi2_ICKM3 = ( (tdelay_obsICKM3 - tdelay_ICKM3)/sigmatICKM3 )**2
+    chi2_HKKM3 = ( (tdelay_obsHKKM3 - tdelay_HKKM3)/sigmatHKKM3 )**2
+    chi2_ICHK = ( (tdelay_obsICHK - tdelay_ICHK)/sigmatICHK )**2
+    chi2_JUNOIC = ( (tdelay_obsJUNOIC - tdelay_JUNOIC)/sigmatJUNOIC )**2
+    chi2_JUNOHK = ( (tdelay_obsJUNOHK - tdelay_JUNOHK)/sigmatJUNOHK )**2
+    chi2_JUNOKM3 = ( (tdelay_obsJUNOKM3 - tdelay_JUNOKM3)/sigmatJUNOKM3 )**2
 
-            chi2_ICKM3 = ( (tdelay_obsICKM3 - tdelay_ICKM3)/sigmatICKM3 )**2
-            chi2_HKKM3 = ( (tdelay_obsHKKM3 - tdelay_HKKM3)/sigmatHKKM3 )**2
-            chi2_ICHK = ( (tdelay_obsICHK - tdelay_ICHK)/sigmatICHK )**2
-            chi2_JUNOIC = ( (tdelay_obsJUNOIC - tdelay_JUNOIC)/sigmatJUNOIC )**2
-            chi2_JUNOHK = ( (tdelay_obsJUNOHK - tdelay_JUNOHK)/sigmatJUNOHK )**2
-            chi2_JUNOKM3 = ( (tdelay_obsJUNOKM3 - tdelay_JUNOKM3)/sigmatJUNOKM3 )**2
-
-            chi2 = chi2_ICKM3 + chi2_HKKM3 + chi2_ICHK + chi2_JUNOIC + chi2_JUNOHK + chi2_JUNOKM3
-            if (chi2_list_min > chi2):
-                chi2_list_min = chi2
-                bestpixel = pixel
-    print(bestpixel)
-    chi2_stat[bestpixel] += 1
+    chi2 = chi2_ICKM3 + chi2_HKKM3 + chi2_ICHK + chi2_JUNOIC + chi2_JUNOHK + chi2_JUNOKM3
+    chi2_stat[np.where(chi2 == np.amin(chi2))[0]] += 1
 
 
 #Conversion to have good RA,dec convention
