@@ -154,7 +154,7 @@ print("68% conf area:",area)
 
 print("making plot...")
 # plot CL controus and true position
-hp.mollview(chi2_stat, norm=None, min=0, max=20, unit='Fitted values distribution, %', cmap='coolwarm', title='', flip='geo')
+hp.mollview(chi2_stat, norm=None, min=0, max=np.amax(chi2_stat), unit='Fitted values distribution, %', cmap='coolwarm', title='', flip='geo')
 hp.graticule()
 hp.projscatter(np.pi/2.-dec_true,ra_true, color='black') #colatitude and longitude in radian
 
