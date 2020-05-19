@@ -85,16 +85,18 @@ sigmatSKJUNO = 0.00275
 
 #define the resolution of the pixel of the healpix map
 #NSIDE = 256
-NSIDE = 128
+NSIDE = 32 
 NPIX = hp.nside2npix(NSIDE)
 print("pixels:",NPIX)
 
 chi2_stat = np.zeros(NPIX)
 
-ntoy=10000
+ntoy=1000
 
-coord = np.array([hp.pix2ang(nside=NSIDE, ipix=pixel) for pixel in range(0, NPIX)])  #dec, ra
-coord[:,0]=coord[:,0]-np.pi/2.
+coord = np.array(hp.pix2ang(nside=NSIDE, ipix=range(0,NPIX))).transpose()
+coord[:,0]=np.pi/2.-coord[:,0] #declination = 90-colatitude
+
+
 
 for itoy in range(0,ntoy):
     print("toy:",itoy)
@@ -131,11 +133,13 @@ for itoy in range(0,ntoy):
     chi2_stat[np.where(chi2 == np.amin(chi2))[0]] += 1
 
 
-#Conversion to have good RA,dec convention
-chi2_stat = [float(value)/float(ntoy)*100 for value in reversed(chi2_stat)]
-data=np.array(chi2_stat)
+#Conversion to percents
+chi2_stat = chi2_stat/float(ntoy)*100
+#chi2_stat = np.vstack((np.arange(NPIX),chi2_stat))
+#print("chi2_stat",chi2_stat[0])
+#print("chi2_stat",chi2_stat[1])
 
-data_sorted = np.sort(data)[::-1]
+data_sorted = np.sort(chi2_stat)[::-1]
 integral = 0
 area = 0
 for i in data_sorted:
@@ -150,9 +154,9 @@ print("68% conf area:",area)
 
 print("making plot...")
 # plot CL controus and true position
-hp.mollview(data, norm=None, min=0, max=20, unit='Fitted values distribution, %', cmap='coolwarm', title='')
+hp.mollview(chi2_stat, norm=None, min=0, max=20, unit='Fitted values distribution, %', cmap='coolwarm', title='', flip='geo')
 hp.graticule()
-hp.projscatter(dec_true-np.pi/2.,-ra_true+np.pi, color='black')
+hp.projscatter(np.pi/2.-dec_true,ra_true, color='black') #colatitude and longitude in radian
 
 #add axis labels
 plt.text(2.0,0., r"$0^\circ$", ha="left", va="center")
@@ -166,7 +170,8 @@ plt.text(0.0, -0.15, r"$0^\circ$", ha="center", va="center")
 plt.text(-.666, -0.15, r"$-60^\circ$", ha="center", va="center")
 plt.text(-1.333, -0.15, r"$-120^\circ$", ha="center", va="center")
 plt.text(-2.0, -0.15, r"$-180^\circ$", ha="center", va="center")
-#plt.show()
 
-plt.savefig("skymap.png")
+plt.show()
+
+#plt.savefig("skymap.png")
 #exit()
