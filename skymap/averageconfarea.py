@@ -89,14 +89,17 @@ NSIDE = 256
 NPIX = hp.nside2npix(NSIDE)
 print("pixels:",NPIX)
 
-avarea = 0
+avarea = 0  #confidence area (error box) estimated for each toy MC
+ninside = 0 #counter of number of toys for which the pixel containing the source is included to the confidence area (to check coverage)
 
 fitted_distr = np.zeros(NPIX)
 
-ntoy=10000
+ntoy=100000
 
 coord = np.array(hp.pix2ang(nside=NSIDE, ipix=range(0,NPIX))).transpose()
 coord[:,0]=np.pi/2.-coord[:,0] #declination = 90-colatitude
+
+true_pixel = hp.ang2pix(nside=NSIDE, theta=np.pi/2-dec_true, phi=ra_true+2*np.pi)
 
 
 
@@ -110,9 +113,6 @@ for itoy in range(0,ntoy):
     tdelay_JUNOKM3 = random.gauss(tdelay_trueJUNOKM3,sigmatJUNOKM3)
 
     #compute chi2 for each pixel, scanning all the sky
-    chi2_list_min = 1e20
-    bestpixel=-1
-
     findposX = np.cos(coord[:,1])*np.cos(coord[:,0])
     findposY = np.sin(coord[:,1])*np.cos(coord[:,0])
     findposZ = np.sin(coord[:,0])
@@ -139,13 +139,18 @@ for itoy in range(0,ntoy):
 
     #compute the 90% and 68% CL area                                                                              
     area = np.sum(chi2_stat <= 0.68) * hp.nside2pixarea(NSIDE, degrees=True)                                             
-    print('68% CL area: ', area, 'deg2')
+    #print('68% CL area: ', area, 'deg2')
     avarea = avarea + area
+
+    if chi2_stat[true_pixel] <= 0.68: ninside += 1
 
 #Conversion to percents
 fitted_distr = fitted_distr/float(ntoy)*100 
 avarea = avarea/float(ntoy)
 print("68% conf average area:",avarea)
+
+ninside = ninside/float(ntoy)*100
+print("Real coverage: ", ninside, "%")
 
 data_sorted = np.sort(fitted_distr)[::-1]
 integral = 0
@@ -160,6 +165,46 @@ print("68% conf area from fitted positions distribution:",area)
 #area = np.sum(data <= 90) * hp.nside2pixarea(NSIDE, degrees=True)
 #print('90% CL area: ', area, 'deg2')
 
+
+#---------------------------------threating measured delays as true delays----------------------------------
+tdelay_ICKM3 = tdelay_trueICKM3
+tdelay_HKKM3 = tdelay_trueHKKM3
+tdelay_ICHK = tdelay_trueICHK
+tdelay_JUNOIC = tdelay_trueJUNOIC
+tdelay_JUNOHK = tdelay_trueJUNOHK
+tdelay_JUNOKM3 = tdelay_trueJUNOKM3
+
+#compute chi2 for each pixel, scanning all the sky
+findposX = np.cos(coord[:,1])*np.cos(coord[:,0])
+findposY = np.sin(coord[:,1])*np.cos(coord[:,0])
+findposZ = np.sin(coord[:,0])
+
+tdelay_obsICKM3 = (posdiffICKM3[0]*findposX+posdiffICKM3[1]*findposY+posdiffICKM3[2]*findposZ)/c
+tdelay_obsHKKM3 = (posdiffHKKM3[0]*findposX+posdiffHKKM3[1]*findposY+posdiffHKKM3[2]*findposZ)/c
+tdelay_obsICHK = (posdiffICHK[0]*findposX+posdiffICHK[1]*findposY+posdiffICHK[2]*findposZ)/c
+tdelay_obsJUNOIC = (posdiffJUNOIC[0]*findposX+posdiffJUNOIC[1]*findposY+posdiffJUNOIC[2]*findposZ)/c
+tdelay_obsJUNOHK = (posdiffJUNOHK[0]*findposX+posdiffJUNOHK[1]*findposY+posdiffJUNOHK[2]*findposZ)/c
+tdelay_obsJUNOKM3 = (posdiffJUNOKM3[0]*findposX+posdiffJUNOKM3[1]*findposY+posdiffJUNOKM3[2]*findposZ)/c
+
+chi2_ICKM3 = ( (tdelay_obsICKM3 - tdelay_ICKM3)/sigmatICKM3 )**2
+chi2_HKKM3 = ( (tdelay_obsHKKM3 - tdelay_HKKM3)/sigmatHKKM3 )**2
+chi2_ICHK = ( (tdelay_obsICHK - tdelay_ICHK)/sigmatICHK )**2
+chi2_JUNOIC = ( (tdelay_obsJUNOIC - tdelay_JUNOIC)/sigmatJUNOIC )**2
+chi2_JUNOHK = ( (tdelay_obsJUNOHK - tdelay_JUNOHK)/sigmatJUNOHK )**2
+chi2_JUNOKM3 = ( (tdelay_obsJUNOKM3 - tdelay_JUNOKM3)/sigmatJUNOKM3 )**2
+
+chi2 = chi2_ICKM3 + chi2_HKKM3 + chi2_ICHK + chi2_JUNOIC + chi2_JUNOHK + chi2_JUNOKM3
+
+#chi2 = chi2 - np.amin(chi2) 
+chi2_stat=scipy.stats.distributions.chi2.cdf(chi2,2)
+
+#compute the 90% and 68% CL area                                                                              
+area = np.sum(chi2_stat <= 0.68) * hp.nside2pixarea(NSIDE, degrees=True)                                             
+print('68% CL area with true delays: ', area, 'deg2')
+avarea = avarea + area
+
+
+#----------------------------------------plotting---------------------------------------------------------
 print("making plot...")
 # plot CL controus and true position
 hp.mollview(fitted_distr, norm=None, min=0, max=np.amax(fitted_distr), unit='Fitted values distribution, %', cmap='coolwarm', title='', flip='geo')
@@ -181,5 +226,7 @@ plt.text(-2.0, -0.15, r"$-180^\circ$", ha="center", va="center")
 
 plt.show()
 
-plt.savefig("toyskymap.png")
+plt.savefig("toyskymap"+str(NSIDE)+"_"+str(ntoy)+".png")
 #exit()
+
+
