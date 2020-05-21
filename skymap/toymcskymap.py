@@ -173,5 +173,5 @@ plt.text(-2.0, -0.15, r"$-180^\circ$", ha="center", va="center")
 
 plt.show()
 
-#plt.savefig("skymap.png")
+plt.savefig("toyskymap.png")
 #exit()
