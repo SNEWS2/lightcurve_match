@@ -5,146 +5,177 @@ import matplotlib.pyplot as plt
 import random
 from matplotlib import ticker, cm
 import healpy as hp
-#from mpl_toolkits.basemap import Basemap,shiftgrid
 from matplotlib.colors import LogNorm
 import scipy.stats
+import itertools
+import sys
 
-# Defnition of the True position of GC
-ra_true = (-94.4)*(np.pi/180.)
-dec_true = (-28.94)*(np.pi/180.)
+if len(sys.argv)>1:
+    ra_deg = float(sys.argv[1])
+    dec_deg = float(sys.argv[2]) 
+    NSIDE = int(sys.argv[3])
+    ntoy = int(sys.argv[4])
+    activedetectors = sys.argv[5:]
+    print(activedetectors)
+else:
+    ra_deg = -94.4
+    dec_deg = -28.94
+    NSIDE = 64
+    ntoy = 1000
+    activedetectors = ["IC","ARCA","HK","JUNO"]
 
-c = 3e8 #speed of light
-Rearth = 6.4e6 #earth radius in m
+ra_true = np.radians(ra_deg)
+dec_true = np.radians(dec_deg) 
+xsource = np.cos(ra_true)*np.cos(dec_true)
+ysource = np.sin(ra_true)*np.cos(dec_true)
+zsource = np.sin(dec_true)
+#unit vector that indicates the emission direction
+sourcedir = -np.array([xsource, ysource, zsource])
 
-#Galactic coordinates of the detectors
+c = 3e8 #speed of light in [m/s]
+Rearth = 6.4e6 #earth radius in [m]
+
+cls = [0.68,0.9] #confidence levels in growing order
+
+#Galactic scancoordinates of the detectors
 lonKM3 = 16*(np.pi/180)
 latKM3 = 0.632973
 lonIC = -63.453056*(np.pi/180)
 latIC = -89.99*(np.pi/180)
-latSK = 36*(np.pi/180)
 lonSK = 129*(np.pi/180)
-latJUNO = 22.11827*(np.pi/180)
+latSK = 36*(np.pi/180)
 lonJUNO = 112.51867*(np.pi/180)
+latJUNO = 22.11827*(np.pi/180)
 
-#positions of the detectors and true source
-xKM3 = Rearth*np.cos(lonKM3)*np.cos(latKM3)
-yKM3 = Rearth*np.sin(lonKM3)*np.cos(latKM3)
-zKM3 = Rearth*np.sin(latKM3)
+detscancoord = {
+        "ARCA": [lonKM3,latKM3],
+        "IC": [lonIC,latIC],
+        "HK": [lonSK,latSK],
+        "JUNO": [lonJUNO,latJUNO]
+        }
 
-xIC = Rearth*np.cos(lonIC)*np.cos(latIC)
-yIC = Rearth*np.sin(lonIC)*np.cos(latIC)
-zIC = Rearth*np.sin(latIC)
-
-xSK = Rearth*np.cos(lonSK)*np.cos(latSK)
-ySK = Rearth*np.sin(lonSK)*np.cos(latSK)
-zSK = Rearth*np.sin(latSK)
-
-xJUNO = Rearth*np.cos(lonJUNO)*np.cos(latJUNO)
-yJUNO = Rearth*np.sin(lonJUNO)*np.cos(latJUNO)
-zJUNO = Rearth*np.sin(latJUNO)
-
-xsource = np.cos(ra_true)*np.cos(dec_true)
-ysource = np.sin(ra_true)*np.cos(dec_true)
-zsource = np.sin(dec_true)
-
-posKM3 = [xKM3, yKM3, zKM3]
-posIC = [xIC, yIC, zIC]
-posSK = [xSK, ySK, zSK]
-posJUNO = [xJUNO,yJUNO,zJUNO]
-sourcepos = [xsource, ysource, zsource]
-
-#distance between different detectors
-posdiff1 = [xIC-xKM3, yIC-yKM3, zIC-zKM3]
-posdiff2 = [xSK-xKM3, ySK-yKM3, zSK-zKM3]
-posdiff3 = [xIC-xSK, yIC-ySK, zIC-zSK]
-
-posdiff4 = [xJUNO-xKM3, yJUNO-yIC, zJUNO-zKM3]
-posdiff5 = [xJUNO-xIC, yJUNO-yIC, zJUNO-zIC]
-posdiff6 = [xJUNO-xSK, yJUNO-ySK, zJUNO-zSK]
-
-#theoretical time delay for each detector pair from the true source
-tdelay_true1 = np.dot( np.array(posdiff1), np.array(sourcepos) )/c
-tdelay_true2 = np.dot( np.array(posdiff2), np.array(sourcepos) )/c
-tdelay_true3 = np.dot( np.array(posdiff3), np.array(sourcepos) )/c
-tdelay_true4 = np.dot( np.array(posdiff4), np.array(sourcepos) )/c
-tdelay_true5 = np.dot( np.array(posdiff5), np.array(sourcepos) )/c
-tdelay_true6 = np.dot( np.array(posdiff6), np.array(sourcepos) )/c
-
-#estimated uncertainties
+#estimated uncertainties in [s]
 sigmatICKM3 = 0.00665
 sigmatICHK = 0.00055
-sigmatKM3HK = 0.0067
+sigmatHKKM3 = 0.0067
 sigmatKM3SK = 0.0074
 sigmatICSK = 0.00195
-sigmatICJUNO = 0.00195
-sigmatHKJUNO = 0.00199
-sigmatKM3JUNO = 0.0074
+sigmatJUNOIC = 0.00195
+sigmatJUNOHK = 0.00199
+sigmatJUNOKM3 = 0.0074
 sigmatSKJUNO = 0.00275
 
+detsigma = {
+        frozenset(["IC","ARCA"]): sigmatICKM3,
+        frozenset(["HK","IC"]): sigmatICHK,
+        frozenset(["HK","ARCA"]): sigmatHKKM3,
+        frozenset(["JUNO","IC"]): sigmatJUNOIC,
+        frozenset(["JUNO","HK"]): sigmatJUNOHK,
+        frozenset(["JUNO","ARCA"]): sigmatJUNOKM3
+        }
+
+detvec = {}
+
+for detname in activedetectors:
+    detvec[detname] = [Rearth*np.cos(detscancoord[detname][0])*np.cos(detscancoord[detname][1]),
+            Rearth*np.sin(detscancoord[detname][0])*np.cos(detscancoord[detname][1]),
+            Rearth*np.sin(detscancoord[detname][1])]
+
+posdiff = {} #vector connecting detector positions in [(m,m,m)]
+truedelay = {} #expected delay for the source in [s]
+for detpair in itertools.combinations(activedetectors, 2):
+    posdiff[detpair] = np.array(detvec[detpair[0]])-np.array(detvec[detpair[1]])
+    truedelay[detpair] = np.dot( posdiff[detpair], sourcedir )/c
+
 #define the resolution of the pixel of the healpix map
-NSIDE = 256
 NPIX = hp.nside2npix(NSIDE)
-pixels = np.arange(NPIX)
+APIX = hp.nside2pixarea(NSIDE, degrees=True)
+print("pixels:",NPIX,"size:",APIX,"deg^2")
 
-#compute chi2 for each pixel, scanning all the sky
-print("computing chi2...")
-chi2_list_total = []
-for pixel in range(0,NPIX):
+areaarr = np.zeros([len(cls),ntoy])
+ninside = np.zeros(len(cls)) #counter of number of toys for which the pixel containing the source is included to the confidence area (to check coverage)
 
-        dec, ra = hp.pix2ang(nside=NSIDE, ipix=pixel)
-        ra_test = ra*(180./np.pi)
-        dec_test = (dec-np.pi/2.)*(180./np.pi)
+fitted_distr = np.zeros(NPIX)
 
-        xfind = np.cos(ra_test*(np.pi/180))*np.cos(dec_test*(np.pi/180))
-        yfind = np.sin(ra_test*(np.pi/180))*np.cos(dec_test*(np.pi/180))
-        zfind = np.sin(dec_test*(np.pi/180))
-        findpos = [xfind,yfind,zfind]
+scancoord = np.array(hp.pix2ang(nside=NSIDE, ipix=range(0,NPIX))).transpose()
+scancoord[:,0]=np.pi/2.-scancoord[:,0] #declination = 90-colatitude
+scandirX = -np.cos(scancoord[:,1])*np.cos(scancoord[:,0])
+scandirY = -np.sin(scancoord[:,1])*np.cos(scancoord[:,0])
+scandirZ = -np.sin(scancoord[:,0])
 
-        tdelay_obs1 = np.dot( np.array(posdiff1), np.array(findpos) )/c
-        tdelay_obs2 = np.dot( np.array(posdiff2), np.array(findpos) )/c
-        tdelay_obs3 = np.dot( np.array(posdiff3), np.array(findpos) )/c
-        tdelay_obs4 = np.dot( np.array(posdiff4), np.array(findpos) )/c
-        tdelay_obs5 = np.dot( np.array(posdiff5), np.array(findpos) )/c
-        tdelay_obs6 = np.dot( np.array(posdiff6), np.array(findpos) )/c
 
-        chi2_ICKM3 = ( (tdelay_obs1 - tdelay_true1)/sigmatICKM3 )**2
-        chi2_ICSK = ( (tdelay_obs3 - tdelay_true3)/sigmatICHK )**2
-        chi2_KM3SK = ( (tdelay_obs2 - tdelay_true2)/sigmatKM3HK )**2
-        chi2_JUNO_KM3 = ( (tdelay_obs4 - tdelay_true4)/sigmatKM3JUNO )**2
-        chi2_JUNO_IC = ( (tdelay_obs5 - tdelay_true5)/sigmatICJUNO )**2
-        chi2_JUNO_SK = ( (tdelay_obs6 - tdelay_true6)/sigmatHKJUNO )**2
+true_pixel = hp.ang2pix(nside=NSIDE, theta=np.pi/2-dec_true, phi=ra_true+2*np.pi)
+deltachi2 = scipy.stats.distributions.chi2.ppf(cls,2)
 
-        chi2 = chi2_KM3SK + chi2_ICSK + chi2_ICKM3 + chi2_JUNO_KM3 + chi2_JUNO_SK + chi2_JUNO_IC
-        #chi2 = chi2_ICSK + chi2_JUNO_IC + chi2_JUNO_SK
-        #chi2 = chi2_ICKM3 + chi2_KM3SK + chi2_ICSK
-        #chi2 = chi2_ICKM3 + chi2_JUNO_IC + chi2_JUNO_KM3
-        #chi2 = chi2_KM3SK + chi2_JUNO_SK + chi2_JUNO_KM3
-        chi2_list_total.append(chi2)
+for itoy in range(0,ntoy):
+    print("toy:",itoy,'/',ntoy,end='\r')
+    measdelay = {} #measured delay in [s]
+    scandelay = {} #vector of delays for each pixel
+    chi2pair = {}
+    chi2 = np.zeros(NPIX)
+    for detpair in itertools.combinations(activedetectors, 2):
+        measdelay[detpair] = random.gauss(truedelay[detpair],detsigma[frozenset(detpair)])
+        scandelay[detpair] = (posdiff[detpair][0]*scandirX + 
+                posdiff[detpair][1]*scandirY +
+                posdiff[detpair][2]*scandirZ)/c
+        chi2pair[detpair] = ( (scandelay[detpair] - measdelay[detpair])/detsigma[frozenset(detpair)] )**2
+        chi2 = chi2 + chi2pair[detpair]
 
-# convert chi2 to p-value
-ndof = 6 # ndof = number of detector pairs in the tot chi2 sum
-         #(6 for comibnation of 4 detectors, 3 when combining 3 detectors)
-chi2_stat = scipy.stats.distributions.chi2.cdf(chi2_list_total,ndof)
+    chi2min = np.amin(chi2)
+    fitted_distr[np.where(chi2 == chi2min)[0]] += 1
+    chi2 = chi2 - chi2min
 
-# Trey to add Galactic Plane map from Planck
-#fermi = hp.read_map('../HFI_Mask_GalPlane_2048_R1.10.fits')
+    #compute the 90% and 68% CL area                                                                              
+    for icl in range(0,len(cls)):
+        area = np.sum(chi2 <= deltachi2[icl]) * APIX
+        areaarr[icl][itoy] = area
+        if chi2[true_pixel] <=deltachi2[icl]: ninside[icl] += 1
 
-#Conversion needed from p-value to confidence level and to have good RA,dec convention
-chi2_stat = [value*100 for value in reversed(chi2_stat)]
-data=np.array(chi2_stat)
+print("--------------------Results---------------")
+for icl in range(0,len(cls)):
+    print(cls[icl]*100,"% conf average area:",areaarr.mean(axis=1)[icl],"+-",areaarr.std(axis=1)[icl],"real coverage: ", ninside[icl]/float(ntoy)*100,"+-",np.sqrt(ninside[icl])/float(ntoy)*100, "%")
 
-#compute the 90% and 68% CL area
-contour = np.ma.masked_values(data, data <= 90)
-area = np.sum(data <= 90) * hp.nside2pixarea(NSIDE, degrees=True)
-contour2 = np.ma.masked_values(data, data <= 68)
-area2 = np.sum(data <= 68) * hp.nside2pixarea(NSIDE, degrees=True)
-print('90% CL area: ', area, 'deg2')
+fitted_distr = fitted_distr/float(ntoy)  
+data_sorted = np.sort(fitted_distr)[::-1]
+integral = 0
+area = 0
+icl = 0
+for i in data_sorted:
+    #print("calc:",i)
+    integral += i
+    area += hp.nside2pixarea(NSIDE, degrees=True)
+    if integral > cls[icl]: 
+        print(cls[icl]*100,"% conf area from fitted positions distribution:",area)
+        icl = icl + 1
+        if icl == len(cls): break
 
+#---------------------------------threating measured delays as true delays----------------------------------
+measdelay = {} #measured delay in [s]
+scandelay = {} #vector of delays for each pixel
+chi2pair = {}
+chi2 = np.zeros(NPIX)
+
+for detpair in itertools.combinations(activedetectors, 2):
+    measdelay[detpair] = truedelay[detpair]
+    scandelay[detpair] = (posdiff[detpair][0]*scandirX + 
+            posdiff[detpair][1]*scandirY +
+            posdiff[detpair][2]*scandirZ)/c
+    chi2pair[detpair] = ( (scandelay[detpair] - measdelay[detpair])/detsigma[frozenset(detpair)] )**2
+    chi2 = chi2 + chi2pair[detpair]
+
+#compute the 90% and 68% CL area                                                                              
+for icl in range(0,len(cls)):
+    area = np.sum(chi2 <= deltachi2[icl]) * APIX
+    print(cls[icl]*100,'% CL area with true delays: ', area, 'deg2')
+
+
+#----------------------------------------plotting---------------------------------------------------------
 print("making plot...")
 # plot CL controus and true position
-hp.mollview(data, norm=None, min=0, max=100, unit='Confidence Level %', cmap='tab10', title='')
+fitted_distr=fitted_distr*100
+hp.mollview(fitted_distr, norm=None, min=0, max=np.amax(fitted_distr), unit='Fitted values distribution, %', cmap='coolwarm', title='', flip='geo')
 hp.graticule()
-hp.projscatter(dec_true-np.pi/2.,-ra_true+np.pi, color='black')
+hp.projscatter(np.pi/2.-dec_true,ra_true, color='black') #colatitude and longitude in radian
 
 #add axis labels
 plt.text(2.0,0., r"$0^\circ$", ha="left", va="center")
@@ -158,7 +189,37 @@ plt.text(0.0, -0.15, r"$0^\circ$", ha="center", va="center")
 plt.text(-.666, -0.15, r"$-60^\circ$", ha="center", va="center")
 plt.text(-1.333, -0.15, r"$-120^\circ$", ha="center", va="center")
 plt.text(-2.0, -0.15, r"$-180^\circ$", ha="center", va="center")
+
 #plt.show()
 
-plt.savefig("skymap.png")
+name = "skymap_fitpos_"+str(ra_deg)+"_"+str(dec_deg)+str(NSIDE)+"_"+str(ntoy)
+for detname in activedetectors:
+    name+="_"+detname
+name+=".png"
+plt.savefig(name)
+
+cdf = scipy.stats.distributions.chi2.cdf(chi2,2)*100
+hp.mollview(cdf, norm=None, min=0, max=100, unit='Confidence level, %', cmap='tab10', title='', flip='geo')
+hp.graticule()
+hp.projscatter(np.pi/2.-dec_true,ra_true, color='black') #colatitude and longitude in radian
+
+#add axis labels
+plt.text(2.0,0., r"$0^\circ$", ha="left", va="center")
+plt.text(1.9,0.45, r"$30^\circ$", ha="left", va="center")
+plt.text(1.4,0.8, r"$60^\circ$", ha="left", va="center")
+plt.text(1.9,-0.45, r"$-30^\circ$", ha="left", va="center")
+plt.text(1.4,-0.8, r"$-60^\circ$", ha="left", va="center")
+plt.text(1.333, -0.15, r"$120^\circ$", ha="center", va="center")
+plt.text(.666, -0.15, r"$60^\circ$", ha="center", va="center")
+plt.text(0.0, -0.15, r"$0^\circ$", ha="center", va="center")
+plt.text(-.666, -0.15, r"$-60^\circ$", ha="center", va="center")
+plt.text(-1.333, -0.15, r"$-120^\circ$", ha="center", va="center")
+plt.text(-2.0, -0.15, r"$-180^\circ$", ha="center", va="center")
+
+#plt.show()
+name = "skymap_chi2_"+str(ra_deg)+"_"+str(dec_deg)+str(NSIDE)+"_"+str(ntoy)
+for detname in activedetectors:
+    name+="_"+detname
+name+=".png"
+plt.savefig(name)
 exit()
