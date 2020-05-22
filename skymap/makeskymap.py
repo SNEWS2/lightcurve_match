@@ -192,7 +192,7 @@ plt.text(-2.0, -0.15, r"$-180^\circ$", ha="center", va="center")
 
 #plt.show()
 
-name = "skymap_fitpos_"+str(ra_deg)+"_"+str(dec_deg)+str(NSIDE)+"_"+str(ntoy)
+name = "skymap_fitpos_"+str(ra_deg)+"_"+str(dec_deg)+"_"+str(NSIDE)+"_"+str(ntoy)
 for detname in activedetectors:
     name+="_"+detname
 name+=".png"
@@ -200,6 +200,7 @@ plt.savefig(name)
 
 cdf = scipy.stats.distributions.chi2.cdf(chi2,2)*100
 hp.mollview(cdf, norm=None, min=0, max=100, unit='Confidence level, %', cmap='tab10', title='', flip='geo')
+#hp.mollview(cdf, norm=None, min=0, max=100, unit='Confidence level, %', cmap='coolwarm', title='', flip='geo')
 hp.graticule()
 hp.projscatter(np.pi/2.-dec_true,ra_true, color='black') #colatitude and longitude in radian
 
@@ -217,7 +218,7 @@ plt.text(-1.333, -0.15, r"$-120^\circ$", ha="center", va="center")
 plt.text(-2.0, -0.15, r"$-180^\circ$", ha="center", va="center")
 
 #plt.show()
-name = "skymap_chi2_"+str(ra_deg)+"_"+str(dec_deg)+str(NSIDE)+"_"+str(ntoy)
+name = "skymap_chi2_"+str(ra_deg)+"_"+str(dec_deg)+"_"+str(NSIDE)+"_"+str(ntoy)
 for detname in activedetectors:
     name+="_"+detname
 name+=".png"
