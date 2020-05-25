@@ -50,6 +50,7 @@ latJUNO = 22.11827*(np.pi/180)
 detscancoord = {
         "ARCA": [lonKM3,latKM3],
         "IC": [lonIC,latIC],
+        "SK": [lonSK,latSK],
         "HK": [lonSK,latSK],
         "JUNO": [lonJUNO,latJUNO]
         }
@@ -71,7 +72,10 @@ detsigma = {
         frozenset(["HK","ARCA"]): sigmatHKKM3,
         frozenset(["JUNO","IC"]): sigmatJUNOIC,
         frozenset(["JUNO","HK"]): sigmatJUNOHK,
-        frozenset(["JUNO","ARCA"]): sigmatJUNOKM3
+        frozenset(["JUNO","ARCA"]): sigmatJUNOKM3,
+        frozenset(["SK","ARCA"]): sigmatKM3SK,
+        frozenset(["SK","IC"]): sigmatICSK,
+        frozenset(["SK","JUNO"]): sigmatSKJUNO
         }
 
 detvec = {}
