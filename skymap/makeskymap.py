@@ -111,6 +111,8 @@ scandirZ = -np.sin(scancoord[:,0])
 true_pixel = hp.ang2pix(nside=NSIDE, theta=np.pi/2-dec_true, phi=ra_true+2*np.pi)
 deltachi2 = scipy.stats.distributions.chi2.ppf(cls,2)
 
+ploteachtoy = False
+
 for itoy in range(0,ntoy):
     print("toy:",itoy,'/',ntoy,end='\r')
     measdelay = {} #measured delay in [s]
@@ -134,6 +136,19 @@ for itoy in range(0,ntoy):
         area = np.sum(chi2 <= deltachi2[icl]) * APIX
         areaarr[icl][itoy] = area
         if chi2[true_pixel] <=deltachi2[icl]: ninside[icl] += 1
+
+    if ploteachtoy is True:
+        cdf = scipy.stats.distributions.chi2.cdf(chi2,2)*100
+        hp.mollview(cdf, norm=None, min=0, max=100, unit='Confidence level, %', cmap='tab10', title='', flip='geo')
+        hp.graticule()
+        hp.projscatter(np.pi/2.-dec_true,ra_true, color='black') #colatitude and longitude in radian
+        name = "skymap_chi2_"+str(ra_deg)+"_"+str(dec_deg)+"_toy"+str(itoy)
+        for detname in activedetectors:
+            name+="_"+detname
+        name+=".png"
+        plt.savefig(name)
+
+
 
 print("--------------------Results---------------")
 for icl in range(0,len(cls)):
