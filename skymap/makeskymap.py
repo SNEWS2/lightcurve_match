@@ -196,6 +196,14 @@ hp.mollview(fitted_distr, norm=None, min=0, max=np.amax(fitted_distr), unit='Fit
 hp.graticule()
 hp.projscatter(np.pi/2.-dec_true,ra_true, color='black') #colatitude and longitude in radian
 
+name = "skymap_fitpos_"+str(ra_deg)+"_"+str(dec_deg)+"_"+str(NSIDE)+"_"+str(ntoy)
+for detname in activedetectors:
+    name+="_"+detname
+name+=".npy"
+
+with open(name, 'wb') as f:
+    np.save(f, fitted_distr)
+
 #add axis labels
 plt.text(2.0,0., r"$0^\circ$", ha="left", va="center")
 plt.text(1.9,0.45, r"$30^\circ$", ha="left", va="center")
