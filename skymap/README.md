@@ -16,3 +16,4 @@ pip install numpy==1.16.4
 ```
 make -j <N>
 ```
+About 3 hours are needed per map per core (the HEALPix resolution and number of realisations can be reduced in MAkefile to speed it up).

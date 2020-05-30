@@ -192,9 +192,15 @@ for icl in range(0,len(cls)):
 print("making plot...")
 # plot CL controus and true position
 fitted_distr=fitted_distr*100
-hp.mollview(fitted_distr, norm=None, min=0, max=np.amax(fitted_distr), unit='Fitted values distribution, %', cmap='coolwarm', title='', flip='geo')
+fitted_distr = fitted_distr+1./float(ntoy)*10. #conversion to percents / 10
+scale = 1./float(ntoy)
+while np.amax(fitted_distr) > scale:
+    scale *= 10
+hp.mollview(fitted_distr, norm='log', min=np.amin(fitted_distr), max=scale, unit='Fitted values distribution, %', cmap='coolwarm', title='', flip='geo')
 hp.graticule()
-hp.projscatter(np.pi/2.-dec_true,ra_true, color='black') #colatitude and longitude in radian
+hp.projscatter(np.pi/2.-dec_true,ra_true, edgecolors='black', facecolors='none') #colatitude and longitude in radian
+for detname in activedetectors:
+    hp.projscatter(np.pi/2.-detscancoord[detname][1], detscancoord[detname][0], color="black", marker="s")
 
 name = "skymap_fitpos_"+str(ra_deg)+"_"+str(dec_deg)+"_"+str(NSIDE)+"_"+str(ntoy)
 for detname in activedetectors:
@@ -227,9 +233,10 @@ plt.savefig(name)
 
 cdf = scipy.stats.distributions.chi2.cdf(chi2,2)*100
 hp.mollview(cdf, norm=None, min=0, max=100, unit='Confidence level, %', cmap='tab10', title='', flip='geo')
-#hp.mollview(cdf, norm=None, min=0, max=100, unit='Confidence level, %', cmap='coolwarm', title='', flip='geo')
 hp.graticule()
-hp.projscatter(np.pi/2.-dec_true,ra_true, color='black') #colatitude and longitude in radian
+hp.projscatter(np.pi/2.-dec_true,ra_true, edgecolors='black', facecolors='none') #colatitude and longitude in radian
+for detname in activedetectors:
+    hp.projscatter(np.pi/2.-detscancoord[detname][1], detscancoord[detname][0], color="black", marker="s")
 
 #add axis labels
 plt.text(2.0,0., r"$0^\circ$", ha="left", va="center")
