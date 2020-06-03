@@ -38,20 +38,22 @@ Rearth = 6.4e6 #earth radius in [m]
 cls = [0.68,0.9] #confidence levels in growing order
 
 #Galactic scancoordinates of the detectors
-lonKM3 = 16*(np.pi/180)
-latKM3 = 0.632973
-lonIC = -63.453056*(np.pi/180)
-latIC = -89.99*(np.pi/180)
-lonSK = 129*(np.pi/180)
-latSK = 36*(np.pi/180)
-lonJUNO = 112.51867*(np.pi/180)
-latJUNO = 22.11827*(np.pi/180)
+lonKM3 = np.radians(16.+6./60.) #Letter Of Intent
+latKM3 = np.radians(36.+16./60.) #Letter Of Intent  
+lonIC = -np.radians(63+27/60.+11./3600.) #wiki
+latIC = -np.radians(89.+59./60.+24./3600.) #wiki
+lonSK = np.radians(137. + 18./60. + 37.1/3600.) #http://www-sk.icrr.u-tokyo.ac.jp/~masato_s/class/sk-detector.pdf
+latSK = np.radians(36. + 25./60. + 32.6/3600.)  #http://www-sk.icrr.u-tokyo.ac.jp/~masato_s/class/sk-detector.pdf
+lonHK = np.radians(137. + 18./60. + 49.137/3600.) #https://arxiv.org/pdf/1805.04163.pdf 
+latHK = np.radians(36. + 21./60. + 20.105/3600.)  #https://arxiv.org/pdf/1805.04163.pdf 
+lonJUNO = np.radians(112.51867) #arXiv:1909.03151
+latJUNO = np.radians(22.11827) #arXiv:1909.03151
 
 detscancoord = {
         "ARCA": [lonKM3,latKM3],
         "IC": [lonIC,latIC],
         "SK": [lonSK,latSK],
-        "HK": [lonSK,latSK],
+        "HK": [lonHK,latHK],
         "JUNO": [lonJUNO,latJUNO]
         }
 
