@@ -90,6 +90,7 @@ truedelay = {} #expected delay for the source in [s]
 for detpair in itertools.combinations(activedetectors, 2):
     posdiff[detpair] = np.array(detvec[detpair[0]])-np.array(detvec[detpair[1]])
     truedelay[detpair] = np.dot( posdiff[detpair], sourcedir )/c
+    print("Expected delay:",detpair,truedelay[detpair])
 
 #define the resolution of the pixel of the healpix map
 NPIX = hp.nside2npix(NSIDE)
