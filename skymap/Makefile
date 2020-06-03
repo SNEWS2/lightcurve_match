@@ -16,11 +16,11 @@ GC_IC_ARCA_JUNO: makeskymap.py
 GC_HK_ARCA_JUNO: makeskymap.py
 	{ time python makeskymap.py -94.4 -28.94 $(NSIDE) $(NTOY) HK ARCA JUNO; } &> log_$(NSIDE)_$(NTOY)_$@.txt 
 Betelgeuse_IC_HK_ARCA_JUNO: makeskymap.py
-	{ time python makeskymap.py -88.8 7.4 $(NSIDE) $(NTOY) IC HK ARCA JUNO; } &> log_$(NSIDE)_$(NTOY)_$@.txt 
+	{ time python makeskymap.py 88.8 7.4 $(NSIDE) $(NTOY) IC HK ARCA JUNO; } &> log_$(NSIDE)_$(NTOY)_$@.txt 
 Cygnus_IC_HK_ARCA_JUNO: makeskymap.py
 	{ time python makeskymap.py -45 40 $(NSIDE) $(NTOY) IC HK ARCA JUNO; } &> log_$(NSIDE)_$(NTOY)_$@.txt 
 Betelgeuse_HK_ARCA_JUNO: makeskymap.py
-	{ time python makeskymap.py -88.8 7.4 $(NSIDE) $(NTOY) HK ARCA JUNO; } &> log_$(NSIDE)_$(NTOY)_$@.txt 
+	{ time python makeskymap.py 88.8 7.4 $(NSIDE) $(NTOY) HK ARCA JUNO; } &> log_$(NSIDE)_$(NTOY)_$@.txt 
 Cygnus_HK_ARCA_JUNO: makeskymap.py
 	{ time python makeskymap.py -45 40 $(NSIDE) $(NTOY) HK ARCA JUNO; } &> log_$(NSIDE)_$(NTOY)_$@.txt
 GC_IC_SK_JUNO: makeskymap.py
