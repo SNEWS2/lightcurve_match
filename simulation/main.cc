@@ -7,6 +7,8 @@ int main(int argc, char *argv[]) {
 
         double Meff, Rbg, tdelay, binwidth;
         int fillopt;
+        int drawopt;
+        bool drawflag = false;
 
         istringstream iss1(argv[1]);
         iss1 >> Meff; 
@@ -25,7 +27,13 @@ int main(int argc, char *argv[]) {
             iss5 >> fillopt;
         } else fillopt = 1;
 
-        detectorrate(Meff,Rbg,tdelay,binwidth,true,true,fillopt);
+        if (argc >= 7) {
+            istringstream iss6(argv[6]);
+            iss6 >> drawopt;
+            if (drawopt == 1) drawflag = true;
+        }
+
+        detectorrate(Meff,Rbg,tdelay,binwidth,drawflag,true,fillopt);
 
         return 0;
     }
